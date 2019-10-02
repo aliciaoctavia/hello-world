@@ -1,0 +1,17 @@
+{
+  "short_name": "Gas Valet",
+  "name": "Gas Valet",
+  "gcm_sender_id":"939698064172",
+  "icons": [
+    {
+      "src": "/img/favicon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ],
+  "background_color":"#a12422",
+  "theme_color":"#a12422",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "start_url": "/"
+}

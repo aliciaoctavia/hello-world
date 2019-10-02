@@ -1,0 +1,23 @@
+{
+    "name": "ben/at.qea.la",
+    "authors": [
+        {
+            "name": "Ben McFarlin",
+            "email": "ben@qeala.com"
+        }
+    ],
+    "repositories": [
+    ],
+    "minimum-stability": "dev",
+
+    "require": {
+        "plivo/plivo-php": "^1.1",
+        "mobiledetect/mobiledetectlib": "^2.8",
+        "stripe/stripe-php": "^4.4",
+        "plivo/php-sdk": "^4.1"
+    },
+
+    "autoload": {
+      "classmap": [ "application/classes/"]
+    }
+}

@@ -1,0 +1,266 @@
+#!/usr/bin/env php
+<?php
+
+// $skip = false;
+// $opts = getopt('s::b::d::', array('skip::','bot::','day::'));
+// if(array_key_exists('s', $opts) || array_key_exists('skip', $opts)){
+//   $skip = true;
+// }
+
+
+$cmd = null;
+
+$count = count($argv);
+if($count > 1){
+  $cmd = $argv[1];
+  if($cmd == "create-view"){
+    if($count > 2){
+      $view = $argv[2];
+      $view = trim($view, '/');
+      $values = explode('.', $view);
+      if(count($values) == 2){
+        $controller_name = $values[0];
+        $controller_name = strtolower($controller_name);
+        $parts = explode('_', $controller_name);
+        for($i=0;$i<count($parts);$i++){
+          $parts[$i] = ucfirst(strtolower($parts[$i]));
+        }
+        $controller_name = implode('', $parts);
+
+        $method_name = $values[1];
+        $method_name = strtolower($method_name);
+        $method_name = str_replace("-", "_", $method_name);
+
+        $file_name = sprintf("%s.%s", strtolower($controller_name), str_replace("_", "-", $method_name));
+
+        // controller
+        $file_path = sprintf("%s/application/controllers/%s.controller.php", __DIR__ , strtolower($controller_name));
+        if(file_exists($file_path)){
+
+          $lines = array();
+          $file = fopen($file_path, "r") or die("Unable to open file!");
+          while(!feof($file)) {
+            $line = fgets($file);
+            $line = trim($line, "\n");
+            if($line) $lines[] = $line;
+          }
+          fclose($file);
+
+          $last = array_pop($lines);
+          if($last == "}"){
+            $lines[] = sprintf("  public function %s()", $method_name);
+            $lines[] = "  {";
+            $lines[] = sprintf("    \$this->registry->template->styles = array('/css/%s.css');", $file_name);
+            $lines[] = sprintf("    \$this->registry->template->scripts = array('/js/%s.js');", $file_name);
+            $lines[] = sprintf("    \$this->registry->template->show('%s.php');", $file_name);
+            $lines[] = "  }";
+            $lines[] = "}";
+          }else{
+            array_push($lines, $last);
+          }
+          $content = implode("\n", $lines);
+
+          $lines = array();
+          $file = fopen($file_path, "w") or die("Unable to open file!");
+          fwrite($file, $content);
+          fclose($file);
+        }else{
+          $lines = array();
+          $lines[] = "<?php";
+          $lines[] = sprintf("class %sController extends BaseController", $controller_name);
+          $lines[] = "{";
+
+          $lines[] = "  public function __construct(\$registry)";
+          $lines[] = "  {";
+          $lines[] = "    parent::__construct(\$registry);";
+          $lines[] = "  }";
+
+          $original_file_name = $file_name;
+          $original_file_path = $file_path;
+
+          $file_name = sprintf("%s.list", strtolower($controller_name));
+          $lines[] = sprintf("  public function index()");
+          $lines[] = "  {";
+          $lines[] = sprintf("    \$this->registry->template->styles = array('/css/%s.css');", $file_name);
+          $lines[] = sprintf("    \$this->registry->template->scripts = array('/js/%s.js');", $file_name);
+          $lines[] = sprintf("    \$this->registry->template->show('%s.php');", $file_name);
+          $lines[] = "  }";
+
+          // view
+          $file_path = sprintf("%s/application/views/%s.php", __DIR__ , $file_name);
+          $content = view_template($file_name);
+          $file = fopen($file_path, "w") or die("Unable to open file!");
+          fwrite($file, $content);
+          fclose($file);
+
+          // javascript
+          $file_path = sprintf("%s/public/js/%s.js", __DIR__ , $file_name);
+          $content = js_template($file_name);
+          $file = fopen($file_path, "w") or die("Unable to open file!");
+          fwrite($file, $content);
+          fclose($file);
+
+          // css
+          $file_path = sprintf("%s/public/css/%s.css", __DIR__ , $file_name);
+          $content = css_template($file_name);
+          $file = fopen($file_path, "w") or die("Unable to open file!");
+          fwrite($file, $content);
+          fclose($file);
+
+          $file_name = $original_file_name;
+          $file_path = $original_file_path;
+
+          $lines[] = sprintf("  public function %s()", $method_name);
+          $lines[] = "  {";
+          $lines[] = sprintf("    \$this->registry->template->styles = array('/css/%s.css');", $file_name);
+          $lines[] = sprintf("    \$this->registry->template->scripts = array('/js/%s.js');", $file_name);
+          $lines[] = sprintf("    \$this->registry->template->show('%s.php');", $file_name);
+          $lines[] = "  }";
+
+          $lines[] = "}";
+          $content = implode("\n", $lines);
+          $file = fopen($file_path, "w") or die("Unable to open file!");
+          fwrite($file, $content);
+          fclose($file);
+        }
+
+        // view
+        $file_path = sprintf("%s/application/views/%s.php", __DIR__ , $file_name);
+        $content = view_template($file_name);
+        $file = fopen($file_path, "w") or die("Unable to open file!");
+        fwrite($file, $content);
+        fclose($file);
+
+        // javascript
+        $file_path = sprintf("%s/public/js/%s.js", __DIR__ , $file_name);
+        $content = js_template($file_name);
+        $file = fopen($file_path, "w") or die("Unable to open file!");
+        fwrite($file, $content);
+        fclose($file);
+
+        // css
+        $file_path = sprintf("%s/public/css/%s.css", __DIR__ , $file_name);
+        $content = css_template($file_name);
+        $file = fopen($file_path, "w") or die("Unable to open file!");
+        fwrite($file, $content);
+        fclose($file);
+
+
+      }else{
+        usage();
+      }
+    }else{
+      usage();
+    }
+  }else if($cmd == "delete-view"){
+    if($count > 2){
+      $view = $argv[2];
+      $view = trim($view, '/');
+      $values = explode('.', $view);
+      if(count($values) == 2){
+        $controller_name = $values[0];
+        $controller_name = strtolower($controller_name);
+        $parts = explode('_', $controller_name);
+        for($i=0;$i<count($parts);$i++){
+          $parts[$i] = ucfirst(strtolower($parts[$i]));
+        }
+        $controller_name = implode('', $parts);
+
+        $method_name = $values[1];
+        $method_name = strtolower($method_name);
+        $method_name = str_replace("-", "_", $method_name);
+
+        $file_name = sprintf("%s.%s", strtolower($controller_name), str_replace("_", "-", $method_name));
+
+        // view
+        $file_path = sprintf("%s/application/views/%s.php", __DIR__ , $file_name);
+        if(file_exists($file_path)){
+          unlink($file_path);
+        }
+
+        // javascript
+        $file_path = sprintf("%s/public/js/%s.js", __DIR__ , $file_name);
+        if(file_exists($file_path)){
+          unlink($file_path);
+        }
+
+        // css
+        $file_path = sprintf("%s/public/css/%s.css", __DIR__ , $file_name);
+        if(file_exists($file_path)){
+          unlink($file_path);
+        }
+
+        // controller
+        $file_path = sprintf("%s/application/controllers/%s.controller.php", __DIR__ , strtolower($controller_name));
+        if(file_exists($file_path)){
+          // just leave it for now
+        }
+
+      }else{
+        usage();
+      }
+    }else{
+      usage();
+    }
+  }else{
+    usage();
+  }
+}else{
+  usage();
+}
+
+function view_template($file_name){
+$result = <<<BLOCK
+<?php include \$layout->header; ?>
+<section>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        $file_name.php
+      </div>
+    </div>
+  </div>
+</section>
+<?php include \$layout->footer; ?>
+BLOCK;
+return $result;
+}
+
+function js_template($file_name){
+$result = <<<BLOCK
+(function($){
+  function bindHandlers(){
+    trace('bindHandlers');
+  }
+  function init(){
+    trace('init');
+  }
+  $(document).ready(function(){
+    trace('document.ready');
+    bindHandlers();
+    init();
+  });
+  $(window).on('load', function(){
+    trace('window.load');
+  });
+})(jQuery);
+BLOCK;
+return $result;
+}
+
+function css_template($file_name){
+$result = <<<BLOCK
+BLOCK;
+return $result;
+}
+
+function usage(){
+  trace("usage: php qeala create-view index.list");
+  die;
+}
+
+function trace($s){
+  print("$s\n");
+}
+
+
